@@ -4,6 +4,8 @@
 #
 # 
 # This script filters ESDAT export by wells you want
+#TODO: Add functionality 
+# - remove rows where all values are '-' 
 # ============================================================================
 #%%
 from openpyxl.utils import column_index_from_string
