@@ -55,15 +55,6 @@ base_dev/
 - E: start of data column
 - 6: row where data starts 
 
-#### Highlights RDL exceedances 
-
-```
-=AND($D6<>"-", LEFT(E6, 1)="<", VALUE(SUBSTITUTE(E6, "<", "")) > VALUE($D6))
-```
-- D: standard column 
-- E: start of data column
-- 6: row where data starts 
-
 
 #### Highlights RDL exceedances (Multiple standards)
 ```
