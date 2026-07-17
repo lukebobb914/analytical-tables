@@ -3,6 +3,22 @@
 
 > This repository consists of scripts for automating analytical table creation  
 
+## Installation
+
+### Clone Repo  
+
+```bash  
+git clone ...
+```
+
+### Create Virtual Environemnt  
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+
 ## Project Structure
 
 ```

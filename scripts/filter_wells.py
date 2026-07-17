@@ -25,10 +25,10 @@ header_row = 4                                  # row number shown in excel
 start_col = column_index_from_string('BN')      # col where IDs start
 file_name = 'Soil RLLD.xlsx'
 
-keep = ['13MW1S', 'EXC', '22-01', '22-08', '23-13', 
-        '23-15', '24-16', 'NE', '8-17', 'MWY', '8-16', 
+keep = ['13MW1S', '22-01', '22-08', '23-13', 
+        '23-15', '24-16',  
         'AE15-BH15', 'AE15-BH16', 'AE15-BH17', 
-        'AE15-BH18', 'AE15-MW7', 'AE15-MW10', 'AE15-MW11']
+        'AE15-MW10', 'AE15-MW11']
 
 #%%
 wb = load_workbook(data_path / file_name)
