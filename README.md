@@ -45,48 +45,36 @@ base_dev/
 - Flag RPDs that fail DQO 
 
 ## Excel Formulas 
-### Conditional Formatting 
-
-#### Highlights exceedances 
-```
-=AND($D6<>"-", VALUE(SUBSTITUTE(E6, "<", "")) > VALUE($D6))
-```
-- D: standard column 
-- E: start of data column
-- 6: row where data starts 
 
 
-#### Highlights RDL exceedances (Multiple standards)
+### 1. Highlights Detection Limit Exceedances (Multiple standards)
 ```
-=LET(
-    standards,$D8:$J8,
-    min_std,
-        MIN(
-            IF(
-                standards="NS",
-                1E99,
-                IFERROR(
-                    --TEXTBEFORE(standards,"-"),
-                    --standards
-                )
-            )
-        ),
-    AND(
-        LEFT(L8,1)="<",
-        --MID(L8,2,99)>min_std
-    )
-)
+=LET(standards,$D8:$J8,min_std,MIN(IF(standards="NS",1E99,IFERROR(--TEXTBEFORE(standards,"-"),--standards))),AND(LEFT(L8,1)="<",--MID(L8,2,99)>min_std))
 ```
 - D8: start of standards 
 - J8: last standard col 
 - L8: start of values 
 
+### 2. Highlights Exceedances (Multiple Standards) 
+```
+=LET(standards,$D8:$D8,min_std,MIN(IF(standards="NS",1E99,IFERROR(--TEXTBEFORE(standards,"-"),--standards))),AND(ISNUMBER(E8),E8>min_std))
+
+```
+- $D8: start of standards
+- $D8: end of standards
+- E8: start of data 
+
+
+
+### Highlights RPD below DQO
 ```
 =AND(   E$2="RPD",   ISNUMBER(E6),   E6 > 0.45 )
 ```
 - Highlights RPD below data quality objective
 - E2: Col where data starts and row where RPD is
 - E6: start of data 
+
+
 
 ### RPD Calculation
 ```
