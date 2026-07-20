@@ -6,7 +6,7 @@
 # This script filters ESDAT export by wells you want
 #TODO: Add functionality 
 # - remove rows where all values are '-' (issues for vapor exports)
-# - add functionality to auto insert 2 cols for every vapor sample
+# - add functionality to auto insert 2 cols for every vapor sample + remove (ppbv) and (ug/sample)
 # ============================================================================
 #%%
 from openpyxl.worksheet.worksheet import Worksheet
@@ -67,8 +67,6 @@ def highlight_unwanted_wells(ws, start_col, header_row, keep) -> None:
             for row in range(1, ws.max_row + 1):
                 ws.cell(row=row, column=col).fill = yellow_fill
     
-
-
 # ========================================
 # Delete unwanted wells 
 # =======================================
