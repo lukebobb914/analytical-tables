@@ -5,7 +5,8 @@
 # 
 # This script filters ESDAT export by wells you want
 #TODO: Add functionality 
-# - remove rows where all values are '-' 
+# - remove rows where all values are '-' (issues for vapor exports)
+# - add functionality to auto insert 2 cols for every vapor sample
 # ============================================================================
 #%%
 from openpyxl.worksheet.worksheet import Worksheet
@@ -15,6 +16,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 import os
+import pandas as pd
 
 data_path = Path.cwd().parent / 'data'
 output_path = Path.cwd().parent / 'output'     
@@ -22,7 +24,7 @@ output_path.mkdir(parents=True, exist_ok=True)
 
 
 #%%
-def main(excel: str, start_col: int, header_row: int, keep: list, param_start_row: int, safe: bool=False) -> None:
+def main(excel: str, start_col: int, header_row: int, keep: list, param_start_row: int, output_path: str, safe: bool=False) -> None:
     """
     Main function to filter wells and delete unwanted data
     """
@@ -38,12 +40,12 @@ def main(excel: str, start_col: int, header_row: int, keep: list, param_start_ro
     else: 
         delete_unwanted_wells(ws, start_col, header_row, keep)
     
-    delete_nodata_params(ws, start_col, param_start_row)
-    apply_core6_fonts(ws)
+    # delete_nodata_params(ws, start_col, param_start_row)
+    # apply_core6_fonts(ws)
 
     # save workbook 
-    name = os.path.splitext(file_name)[0]
-    wb.save(output_path / f'{name}_filtered_wells.xlsx')
+    name = Path(excel).stem
+    wb.save(Path(output_path) / f'{name}_filtered_wells.xlsx')
 
 
 def highlight_unwanted_wells(ws, start_col, header_row, keep) -> None:
@@ -121,17 +123,20 @@ def apply_core6_fonts(ws) -> None:
 # %%
 # #! Inputs 
 header_row = 4                                  # row number shown in excel 
-start_col = column_index_from_string('BN')      # col where IDs start
+start_col = column_index_from_string('G')      # col where IDs start
 param_start_row = 11                            # row of first param heading 
-excel = '/Users/michaelchan/Documents/python/analytical-tables/data/GW.xlsx'
+excel = '/Users/michaelchan/Documents/python/analytical-tables/data/Commercial.xlsx'
 
-keep = ['13MW1S', '22-01', '22-08', '23-13',    
-        '23-15',  
-        'AE15-BH15', 'AE15-BH16', 'AE15-BH17', 
-        'AE15-MW10', 'AE15-MW11']
+# keep = ['13MW1S', '22-01', '22-08', '23-13',    
+#         '23-15',  
+#         'AE15-BH15', 'AE15-BH16', 'AE15-BH17', 
+#         'AE15-MW10', 'AE15-MW11']
 
 
 # %%
-main(excel, start_col, header_row, keep, param_start_row)
+df = pd.read_excel(data_path / 'Classification.xlsx', sheet_name='Offsite')
+keep = df['Lab ID'].tolist()
+#%%
+main(excel, start_col, header_row, keep, param_start_row, '/Users/michaelchan/Documents/python/analytical-tables/output')
 
 # %%
