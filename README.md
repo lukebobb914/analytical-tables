@@ -1,5 +1,5 @@
 
-# Review of Background Soil Arsenic Concentrations in Lower Mainland
+# Analytical Tables Guide
 
 > This repository consists of scripts for automating analytical table creation  
 
@@ -65,7 +65,6 @@ base_dev/
 - E8: start of data 
 
 
-
 ### Highlights RPD below DQO
 ```
 =AND(   E$2="RPD",   ISNUMBER(E6),   E6 > 0.45 )
@@ -74,17 +73,7 @@ base_dev/
 - E2: Col where data starts and row where RPD is
 - E6: start of data 
 
-
-
-### RPD Calculation
-```
-=IF(OR(E6="-", F6="-", E6="", F6=""),  "-",  IF(AND(ISNUMBER(E6), ISNUMBER(F6)),IF(AND(E6<=$C6*5, F6<=$C6*5),"NC", ABS(E6-F6)/AVERAGE(E6, F6)),"NC"))
-```
-- E6: Parent value
-- F6: Dup value
-- C6: RDL
-
-### RPD DQO
+#### RPD DQO Limits
 | Medium | Parameter Category | Lab Duplicate DQO | Field Duplicate DQO |
 |:------:|:-------------------|:-----------------:|:-------------------:|
 | **Soil** | High variability metals (Ag, Al, Ba, Hg, K, Mo, Na, Pb, Sn, Sr, Ti) | 40% | 60% |
@@ -97,4 +86,15 @@ base_dev/
 | **Water** | Extractable Petroleum Hydrocarbons | 30% | 45% |
 | **Water** | Volatile organics and most other typical organic parameters | 30% | 45% |
 | **Vapour** | All parameters | 40% | 60% |
+
+
+### RPD Calculation
+```
+=IF(OR(E6="-", F6="-", E6="", F6=""),  "-",  IF(AND(ISNUMBER(E6), ISNUMBER(F6)),IF(AND(E6<=$C6*5, F6<=$C6*5),"NC", ABS(E6-F6)/AVERAGE(E6, F6)),"NC"))
+```
+- E6: Parent value
+- F6: Dup value
+- C6: RDL
+
+
 
