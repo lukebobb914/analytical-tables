@@ -125,10 +125,10 @@ start_col = column_index_from_string('G')      # col where IDs start
 param_start_row = 11                            # row of first param heading 
 excel = '/Users/michaelchan/Documents/python/analytical-tables/data/Commercial.xlsx'
 
-# keep = ['13MW1S', '22-01', '22-08', '23-13',    
-#         '23-15',  
-#         'AE15-BH15', 'AE15-BH16', 'AE15-BH17', 
-#         'AE15-MW10', 'AE15-MW11']
+keep = ['13MW1S', '22-01', '22-08', '23-13',    
+        '23-15',  
+        'AE15-BH15', 'AE15-BH16', 'AE15-BH17', 
+        'AE15-MW10', 'AE15-MW11']
 
 
 # %%
