@@ -3,8 +3,11 @@
 # Contact Info     : mchan@core6.ca
 #
 # This script: 
-# automates the process of sorting/filtering analytical data and outputs 
-# excel sheet ready for styling 
+#  automates the process of sorting/filtering analytical data and outputs 
+#  excel sheet ready for styling 
+# * Specifications: 
+#   - In vertical export style (cols = samples)
+#   - Additional formatting functions currently only work for soil/gw not vapor tables
 # ============================================================================
 
 #%%
