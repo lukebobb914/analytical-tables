@@ -1,9 +1,9 @@
 # =============================================================================
 # Current Author   : Michael Chan
 # Contact Info     : mchan@core6.ca
-#
 # 
-# This script filters ESDAT export by wells you want
+# This script filters ESDAT export by wells you want for vertical exports
+
 #TODO: Add functionality 
 # - remove rows where all values are '-' (issues for vapor exports)
 # - add functionality to auto insert 2 cols for every vapor sample + remove (ppbv) and (ug/sample)
