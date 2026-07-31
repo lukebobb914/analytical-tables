@@ -41,6 +41,7 @@ def process_split_data(df: pd.DataFrame, groupby_fields: list, non_analyte_cols:
     # Create df 
     # =========================
     merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+    merged_df = merged_df.drop(columns=['missing_count'])
     conflicts_df = pd.DataFrame(all_conflicts)
 
     # =========================
