@@ -31,7 +31,6 @@ def merge_group(df: pd.DataFrame, data_cols: list, base_row: pd.Series) -> tuple
     
     conflicts = []
     for _, row in df.iloc[1:].iterrows():
-
         # True (flag) only if all three conditions are met 
         # 1. Base row has a value
         # 2. current row has a value 
@@ -49,8 +48,8 @@ def merge_group(df: pd.DataFrame, data_cols: list, base_row: pd.Series) -> tuple
                 'base_sample_code': base_row['Sample Code'],                            # get base_row's sample code 
                 'sample_code': row['Sample Code'],                                      # get current role's sample code 
                 'conflicting_columns': conflict_mask[conflict_mask].index.tolist(),     # col names with conflicting values 
-                'base_values': base_row[data_cols][conflict_mask.values].to_dict(),     # gets series of all conflicts (base) => converts to dict
-                'row_values': row[data_cols][conflict_mask.values].to_dict()            # gets series of all conflicts (current role) => converts to dict
+                'base_values': base_row[data_cols][conflict_mask].to_dict(),            # gets series of all conflicts (base) => converts to dict
+                'row_values': row[data_cols][conflict_mask].to_dict()                   # gets series of all conflicts (current role) => converts to dict
             })
 
         # Copy over current row to base_row only if no value exists in base_row
@@ -103,81 +102,85 @@ for _, group in df.groupby(groupby_fields_dict['soil'], sort=False):
 merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
 conflicts_df = pd.DataFrame(all_conflicts)
 
+# export 
+merged_df.to_csv(output_path / 'merged.csv')
+conflicts_df.to_csv(output_path / 'conflicts.csv')
+
+
 
 
 #%% DEPRACATED METHOD 
-has_fid = df[df['Field ID'].notna()].copy()
-no_fid = df[df['Field ID'].isna()].copy()
+# has_fid = df[df['Field ID'].notna()].copy()
+# no_fid = df[df['Field ID'].isna()].copy()
 
-# ============================================================
-# Merge rows with Field ID
-# Steps: 
-# 1) Groupby field id and depth => then iterate through each group's rows
-# 2) Sort by least missing values 
-# 3) Define the base_row as row with least amt of missing values 
-# 4) Populate Lab Report Number col with all unique lab report numbers 
-# 5) Call merge fn 
-# ============================================================
-all_conflicts = []
-merged_rows = []
-metadata_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
+# # ============================================================
+# # Merge rows with Field ID
+# # Steps: 
+# # 1) Groupby field id and depth => then iterate through each group's rows
+# # 2) Sort by least missing values 
+# # 3) Define the base_row as row with least amt of missing values 
+# # 4) Populate Lab Report Number col with all unique lab report numbers 
+# # 5) Call merge fn 
+# # ============================================================
+# all_conflicts = []
+# merged_rows = []
+# metadata_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
 
-for _, group in has_fid.groupby(['Field ID', 'Depth'], sort=False):
-    group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
-    base_row = group.iloc[0].copy()                                         # define base_row
-    data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
+# for _, group in has_fid.groupby(['Field ID', 'Depth'], sort=False):
+#     group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
+#     base_row = group.iloc[0].copy()                                         # define base_row
+#     data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
 
-    # overwrite unique lab reports to 'Lab Report Number'
-    lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
-    base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
+#     # overwrite unique lab reports to 'Lab Report Number'
+#     lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
+#     base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
 
-    # merge rows together
-    base_row, conflicts = merge_group(group, data_cols, base_row)
-    merged_rows.append(base_row)
-    all_conflicts.extend(conflicts)
+#     # merge rows together
+#     base_row, conflicts = merge_group(group, data_cols, base_row)
+#     merged_rows.append(base_row)
+#     all_conflicts.extend(conflicts)
 
-merged = pd.DataFrame(merged_rows).reset_index(drop=True)
-conflicts_group = pd.DataFrame(all_conflicts)
+# merged = pd.DataFrame(merged_rows).reset_index(drop=True)
+# conflicts_group = pd.DataFrame(all_conflicts)
 
 
-#%%
-# ============================================================
-# Merge rows without Field ID to merged group
-# Steps: 
-# 1) Populate Field ID using Sample Code
-# 2) Concat no_fid onto merged
-# 2) Groupby field id and depth => then iterate through each group's rows
-# 3) Define the base_row as row with least amt of missing values 
-# 4) Populate Lab Report Number col with all unique lab report numbers 
-# 5) Call merge fn 
-# ============================================================
-no_fid['Field ID'] = no_fid['Sample Code']
-combined = pd.concat([merged, no_fid], ignore_index=True)
+# # ============================================================
+# # Merge rows without Field ID to merged group
+# # Steps: 
+# # 1) Populate Field ID using Sample Code
+# # 2) Concat no_fid onto merged
+# # 2) Groupby field id and depth => then iterate through each group's rows
+# # 3) Define the base_row as row with least amt of missing values 
+# # 4) Populate Lab Report Number col with all unique lab report numbers 
+# # 5) Call merge fn 
+# # ============================================================
+# no_fid['Field ID'] = no_fid['Sample Code']
+# combined = pd.concat([merged, no_fid], ignore_index=True)
 
-all_conflicts2 = []
-merged_rows2 = []
-for _, group in combined.groupby(['Field ID', 'Depth'], sort=False):
-    base_row = group.iloc[0].copy()                                         # define base_row
-    data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
+# all_conflicts2 = []
+# merged_rows2 = []
+# for _, group in combined.groupby(['Field ID', 'Depth'], sort=False):
+#     base_row = group.iloc[0].copy()                                         # define base_row
+#     data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
 
-    # overwrite unique lab reports to 'Lab Report Number'
-    lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
-    base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
+#     # overwrite unique lab reports to 'Lab Report Number'
+#     lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
+#     base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
 
-    # merge rows together
-    base_row, conflicts = merge_group(group, data_cols, base_row)
-    merged_rows2.append(base_row)
-    all_conflicts2.extend(conflicts)
+#     # merge rows together
+#     base_row, conflicts = merge_group(group, data_cols, base_row)
+#     merged_rows2.append(base_row)
+#     all_conflicts2.extend(conflicts)
 
-merged2 = pd.DataFrame(merged_rows2).reset_index(drop=True)
-conflicts_group2 = pd.DataFrame(all_conflicts2)
+# merged2 = pd.DataFrame(merged_rows2).reset_index(drop=True)
+# conflicts_group2 = pd.DataFrame(all_conflicts2)
 
-#%%
-# ============================================================
-# Export 
-# ============================================================
-merged.to_csv(output_path / 'merged1.csv')
-merged2.to_csv(output_path / 'merged2.csv')
+# #%%
+# # ============================================================
+# # Export 
+# # ============================================================
+# merged.to_csv(output_path / 'merged1.csv')
+# merged2.to_csv(output_path / 'merged2.csv')
 
 
 
