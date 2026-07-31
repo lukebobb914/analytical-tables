@@ -11,16 +11,49 @@
 import pandas as pd
 from pathlib import Path
 import numpy as np
+from enum import Enum
 
-parent_dir = Path(__file__).resolve().parent.parent
-data_path = parent_dir / 'data'
-output_path = parent_dir / 'output'
-output_path.mkdir(parents=True, exist_ok=True)
+class Matrix(Enum): 
+    SOIL = 'soil'
+    GW = 'gw'
+    SW = 'sw'
+    PW = 'pw'
+    SED = 'sed'
+
+def process_split_data(df: pd.DataFrame, groupby_fields: list, non_analyte_cols: list) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    all_conflicts = []
+    merged_rows = []
+    for _, group in df.groupby(groupby_fields, sort=False):
+        group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
+        base_row = group.iloc[0].copy()                                            # define base_row
+        data_cols = [col for col in group.columns if col not in non_analyte_cols]     # define analytes cols 
+
+        # Populate 'Lab Report Number with list of unique lab reports 
+        lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
+        base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
+
+        # merge rows together
+        base_row, conflicts = merge_group(group, data_cols, base_row)
+        merged_rows.append(base_row)
+        all_conflicts.extend(conflicts)
+
+    # =========================
+    # Create df 
+    # =========================
+    merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+    conflicts_df = pd.DataFrame(all_conflicts)
+
+    # =========================
+    # Check any rows missed 
+    # =========================
+    dropped_df = df[df[groupby_fields].isna().any(axis=1)]
+
+    return merged_df, conflicts_df, dropped_df
 
 def merge_group(df: pd.DataFrame, data_cols: list, base_row: pd.Series) -> tuple[pd.Series, list[dict]]:
     """ 
-    merges rows together that are from the same sample returning a pandas 
-    series of all merged rows and list of all conflicts
+    merges rows together given a df and returns a 
+    series of a single merged row and a series of all conflicts
     """
     # Steps: 
     # 1) iterate thru each row in df but skip 1st row (base_row)
@@ -57,13 +90,25 @@ def merge_group(df: pd.DataFrame, data_cols: list, base_row: pd.Series) -> tuple
         base_row.loc[mask] = row.loc[mask]
     return base_row, conflicts
 
+parent_dir = Path(__file__).resolve().parent.parent
+data_path = parent_dir / 'data'
+output_path = parent_dir / 'output'
+output_path.mkdir(parents=True, exist_ok=True)
+
 # %%
 # =========================
-# Inputs/Setup 
+# Inputs
 # =========================
-header_row = 47     # row # with headers  
-last_row = 466      # last row # with data 
-num_rows = last_row - header_row 
+excel_name = 'kitimat_historical_soil.xlsx'
+header_row = 47                     # row # with headers  
+last_row = 466                      # last row # with data 
+matrix_type = Matrix.SW             # one of SOIL, SW, GW, PW, SED
+
+# =========================
+# Constants
+# =========================
+# cols that are not analyte cols (ie. do not need to check if there is conflict)
+non_analyte_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
 
 # Fields used to group rows from the same samples together
 groupby_fields_dict = {
@@ -74,64 +119,41 @@ groupby_fields_dict = {
     'sed': ['Location Code', 'Date', 'Sample Type', 'Depth'],
 }
 
-df = pd.read_excel(data_path / 'kitimat_historical_soil.xlsx', sheet_name='Chemistry Table', skiprows=47, nrows=num_rows)
+# =========================
+# Calculated Params 
+# =========================
+num_rows = last_row - header_row 
+groupby_fields = groupby_fields_dict[matrix_type.value]
+
+#%%
+# =========================
+# Set up
+# =========================
+df = pd.read_excel(data_path / excel_name, sheet_name='Chemistry Table', skiprows=header_row, nrows=num_rows)
 df['missing_count'] = (df == '-').sum(axis=1)
 df = df.replace('-', np.nan)
 df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
 
 #%% 
-all_conflicts = []
-merged_rows = []
-metadata_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
-
-for _, group in df.groupby(groupby_fields_dict['soil'], sort=False):
-    group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
-    base_row = group.iloc[0].copy()                                            # define base_row
-    data_cols = [col for col in group.columns if col not in metadata_cols]     # define analytes cols 
-
-    # Populate 'Lab Report Number with list of unique lab reports to 
-    lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
-    base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
-
-    # merge rows together
-    base_row, conflicts = merge_group(group, data_cols, base_row)
-    merged_rows.append(base_row)
-    all_conflicts.extend(conflicts)
-
-# create df
-merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
-conflicts_df = pd.DataFrame(all_conflicts)
+# =========================
+# Combine rows
+# =========================
+# process split data 
+merged_df, conflicts_df, dropped_df = process_split_data(df, groupby_fields, non_analyte_cols)  
 
 # export 
 merged_df.to_csv(output_path / 'merged.csv')
 conflicts_df.to_csv(output_path / 'conflicts.csv')
+dropped_df.to_csv(output_path / 'dropped.csv')
 
 
-
-
-#%% DEPRACATED METHOD 
-# has_fid = df[df['Field ID'].notna()].copy()
-# no_fid = df[df['Field ID'].isna()].copy()
-
-# # ============================================================
-# # Merge rows with Field ID
-# # Steps: 
-# # 1) Groupby field id and depth => then iterate through each group's rows
-# # 2) Sort by least missing values 
-# # 3) Define the base_row as row with least amt of missing values 
-# # 4) Populate Lab Report Number col with all unique lab report numbers 
-# # 5) Call merge fn 
-# # ============================================================
-# all_conflicts = []
-# merged_rows = []
-# metadata_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
-
-# for _, group in has_fid.groupby(['Field ID', 'Depth'], sort=False):
+# #%%
+# for _, group in df.groupby(groupby_fields, sort=False):
 #     group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
-#     base_row = group.iloc[0].copy()                                         # define base_row
-#     data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
+#     base_row = group.iloc[0].copy()                                            # define base_row
+#     data_cols = [col for col in group.columns if col not in non_analyte_cols]     # define analytes cols 
 
-#     # overwrite unique lab reports to 'Lab Report Number'
+#     # Populate 'Lab Report Number with list of unique lab reports to 
 #     lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
 #     base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
 
@@ -140,57 +162,17 @@ conflicts_df.to_csv(output_path / 'conflicts.csv')
 #     merged_rows.append(base_row)
 #     all_conflicts.extend(conflicts)
 
-# merged = pd.DataFrame(merged_rows).reset_index(drop=True)
-# conflicts_group = pd.DataFrame(all_conflicts)
+#     # =========================
+#     # Check any rows missed 
+#     # =========================
+#     dropped_df = df[df[groupby_fields].isna().any(axis=1)]
 
+#     # =========================
+#     # Export
+#     # =========================
+#     merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+#     conflicts_df = pd.DataFrame(all_conflicts)
 
-# # ============================================================
-# # Merge rows without Field ID to merged group
-# # Steps: 
-# # 1) Populate Field ID using Sample Code
-# # 2) Concat no_fid onto merged
-# # 2) Groupby field id and depth => then iterate through each group's rows
-# # 3) Define the base_row as row with least amt of missing values 
-# # 4) Populate Lab Report Number col with all unique lab report numbers 
-# # 5) Call merge fn 
-# # ============================================================
-# no_fid['Field ID'] = no_fid['Sample Code']
-# combined = pd.concat([merged, no_fid], ignore_index=True)
-
-# all_conflicts2 = []
-# merged_rows2 = []
-# for _, group in combined.groupby(['Field ID', 'Depth'], sort=False):
-#     base_row = group.iloc[0].copy()                                         # define base_row
-#     data_cols = [col for col in group.columns if col not in metadata_cols]  # define analytes cols 
-
-#     # overwrite unique lab reports to 'Lab Report Number'
-#     lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
-#     base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
-
-#     # merge rows together
-#     base_row, conflicts = merge_group(group, data_cols, base_row)
-#     merged_rows2.append(base_row)
-#     all_conflicts2.extend(conflicts)
-
-# merged2 = pd.DataFrame(merged_rows2).reset_index(drop=True)
-# conflicts_group2 = pd.DataFrame(all_conflicts2)
-
-# #%%
-# # ============================================================
-# # Export 
-# # ============================================================
-# merged.to_csv(output_path / 'merged1.csv')
-# merged2.to_csv(output_path / 'merged2.csv')
-
-
-
-
-
-
-
-
-
-
-
-
-# %%
+#     merged_df.to_csv(output_path / 'merged.csv')
+#     conflicts_df.to_csv(output_path / 'conflicts.csv')
+#     dropped_df.to_csv(output_path / 'dropped.csv')
