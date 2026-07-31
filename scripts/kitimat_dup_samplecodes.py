@@ -56,10 +56,6 @@ def merge_group(df: pd.DataFrame, data_cols: list, base_row: pd.Series) -> tuple
         # Copy over current row to base_row only if no value exists in base_row
         mask = base_row.isna() & row.notna()
         base_row.loc[mask] = row.loc[mask]
-
-        # strip whitespace that somehow is introduced in line above?
-        base_row = base_row.apply(lambda x: x.strip() if isinstance(x, str) else x)
-
     return base_row, conflicts
 
 # %%
@@ -70,12 +66,46 @@ header_row = 47     # row # with headers
 last_row = 466      # last row # with data 
 num_rows = last_row - header_row 
 
+# Fields used to group rows from the same samples together
+groupby_fields_dict = {
+    'soil': ['Location Code', 'Date', 'Sample Type', 'Depth'], 
+    'sw': ['Location Code', 'Date', 'Sample Type'],
+    'gw': ['Location Code', 'Date', 'Sample Type'],
+    'pw': ['Location Code', 'Date', 'Sample Type'],
+    'sed': ['Location Code', 'Date', 'Sample Type', 'Depth'],
+}
+
 df = pd.read_excel(data_path / 'kitimat_historical_soil.xlsx', sheet_name='Chemistry Table', skiprows=47, nrows=num_rows)
 df['missing_count'] = (df == '-').sum(axis=1)
 df = df.replace('-', np.nan)
-df = df.apply(lambda col: col.str.strip() if col.dtype == 'object' else col)
+df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
 
 #%% 
+all_conflicts = []
+merged_rows = []
+metadata_cols = ['Sample Code', 'missing_count', 'Lab Report Number', 'Parent Sample']
+
+for _, group in df.groupby(groupby_fields_dict['soil'], sort=False):
+    group = group.sort_values('missing_count', ascending=True)                 # sort by least missing values
+    base_row = group.iloc[0].copy()                                            # define base_row
+    data_cols = [col for col in group.columns if col not in metadata_cols]     # define analytes cols 
+
+    # Populate 'Lab Report Number with list of unique lab reports to 
+    lab_reports = group['Lab Report Number'].dropna().unique().tolist()     
+    base_row['Lab Report Number'] = ', '.join(str(x) for x in lab_reports)
+
+    # merge rows together
+    base_row, conflicts = merge_group(group, data_cols, base_row)
+    merged_rows.append(base_row)
+    all_conflicts.extend(conflicts)
+
+# create df
+merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+conflicts_df = pd.DataFrame(all_conflicts)
+
+
+
+#%% DEPRACATED METHOD 
 has_fid = df[df['Field ID'].notna()].copy()
 no_fid = df[df['Field ID'].isna()].copy()
 
