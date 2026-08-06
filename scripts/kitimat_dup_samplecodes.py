@@ -40,7 +40,9 @@ def process_split_data(df: pd.DataFrame, groupby_fields: list, non_analyte_cols:
     # =========================
     # Create df 
     # =========================
-    merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+    # merged_df = pd.DataFrame(merged_rows).reset_index(drop=True)
+    merged_df = pd.concat(merged_rows, axis=1).T.reset_index(drop=True)
+
     merged_df = merged_df.drop(columns=['missing_count'])
     conflicts_df = pd.DataFrame(all_conflicts)
 
@@ -100,10 +102,16 @@ output_path.mkdir(parents=True, exist_ok=True)
 # =========================
 # Inputs
 # =========================
-excel_name = 'kitimat_historical_soil.xlsx'
-header_row = 47                     # row # with headers  
-last_row = 466                      # last row # with data 
-matrix_type = Matrix.SW             # one of SOIL, SW, GW, PW, SED
+# excel_name = 'kitimat_historical_soil.xlsx'
+# header_row = 47                     # row # with headers  
+# last_row = 466                      # last row # with data 
+# matrix_type = Matrix.SOIL             # one of SOIL, SW, GW, PW, SED
+
+# excel_name = 'kitimat_historical_soil.xlsx'
+# matrix_type = Matrix.SOIL             # one of SOIL, SW, GW, PW, SED
+
+excel_name = '928 water 2023 to 2025.xlsx'
+matrix_type = Matrix.SW
 
 # =========================
 # Constants
@@ -123,14 +131,31 @@ groupby_fields_dict = {
 # =========================
 # Calculated Params 
 # =========================
-num_rows = last_row - header_row 
 groupby_fields = groupby_fields_dict[matrix_type.value]
 
 #%%
 # =========================
 # Set up
 # =========================
-df = pd.read_excel(data_path / excel_name, sheet_name='Chemistry Table', skiprows=header_row, nrows=num_rows)
+df = pd.read_excel(data_path / excel_name, sheet_name='Chemistry Table', header=None, skiprows=3)
+
+# detect header row (ie. row with 'Location Code')
+header_row = df[df.iloc[:, 0] == 'Location Code'].index[0]
+
+# remove bottom metadata rows 
+subset = df.iloc[header_row:]                       # remove starting blank rows 
+idx = subset[subset.isna().all(axis=1)].index[0]    # get index of first blank row 
+df = df.iloc[:idx]                                  # remove metadata rows at bottom
+
+# populate header row and set header row 
+df.iloc[header_row] = df.iloc[header_row].fillna(df.iloc[0])
+df.columns = df.iloc[header_row]
+df = df.iloc[header_row + 1:]                       # only select rows after header row
+
+
+#%%
+
+# df = pd.read_excel(data_path / excel_name, sheet_name='Chemistry Table', skiprows=header_row, nrows=num_rows)
 df['missing_count'] = (df == '-').sum(axis=1)
 df = df.replace('-', np.nan)
 df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
@@ -177,3 +202,4 @@ dropped_df.to_csv(output_path / 'dropped.csv')
 #     merged_df.to_csv(output_path / 'merged.csv')
 #     conflicts_df.to_csv(output_path / 'conflicts.csv')
 #     dropped_df.to_csv(output_path / 'dropped.csv')
+# %%
