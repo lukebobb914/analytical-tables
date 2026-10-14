@@ -53,7 +53,8 @@ base_dev/
 - $D8: start of standards
 - $D8: end of standards
 - E8: start of data 
-- E2: row where RPD of current col (checks if is RPD col)
+- E$2: row where RPD of current col (checks if is RPD col)
+- Replace "NS" with "-" if export has "-" instead of "NS" when no standard
 
 ### 2. Highlights Detection Limit Exceedances (Multiple standards)
 ```excel
@@ -102,8 +103,8 @@ base_dev/
 ```excel
 =IF(OR(E6="-", F6="-", E6="", F6=""),  "-",  IF(AND(ISNUMBER(E6), ISNUMBER(F6)),IF(AND(E6<=$C6*5, F6<=$C6*5),"NC", ABS(E6-F6)/AVERAGE(E6, F6)),"NC"))
 ```
-- W6: Parent value
-- X6: Dup value
+- E6: Parent value
+- F6: Dup value
 - C6: RDL
 
 ### RPD Calculation (Standard is a range)
