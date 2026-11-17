@@ -63,6 +63,7 @@ base_dev/
 - D8: start of standards 
 - J8: last standard col 
 - L8: start of values 
+- Replace "NS" with "-" if export has "-" instead of "NS" when no standard
 
 
 ### 3. Highlights RPD below DQO
