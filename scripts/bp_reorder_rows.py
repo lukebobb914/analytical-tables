@@ -38,8 +38,6 @@
 #%%
 import pandas as pd
 from pathlib import Path
-import csv
-import numpy as np
 
 parent_dir = Path(__file__).resolve().parent.parent
 data_path = parent_dir / 'data'
