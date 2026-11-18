@@ -53,7 +53,7 @@ output_path.mkdir(parents=True, exist_ok=True)
 rows_to_skip = 8
 
 order_df = pd.read_excel(data_path / 'bp_esdat_export.xlsx', sheet_name='order')
-export_df = pd.read_excel(data_path / 'bp_esdat_export.xlsx', sheet_name='export', skiprows=rows_to_skip)
+export_df = pd.read_excel(data_path / 'bp_esdat_export.xlsx', sheet_name='export1', skiprows=rows_to_skip)
 export_df = export_df.iloc[:, 2:]       # drop first 2 cols
 
 # convert param col to lowercase 
@@ -71,6 +71,14 @@ export = export_df.iloc[:, [0]].drop_duplicates().rename(
 merged_params_df = order.merge(export, left_on='Master Order', right_on='Export Order', how='outer', indicator=True)
 merged_params_df.columns = ['order', 'export', 'status']
 merged_params_df.to_csv('check_params.csv', index=False)
+
+# Check dup params in export 
+duplicates = export_df[
+    export_df.iloc[:, 0].duplicated(keep=False)
+].sort_values(export_df.columns[0])
+
+print(duplicates)
+print('**fix duplicates if applicable')
 
 # %%
 # Build actual df 
