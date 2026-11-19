@@ -77,13 +77,14 @@ base_dev/
 
 ### 4. Highlights UCC 
 ```excel
-=LET(standards,$D6:$D6,min_std,MIN(IF(standards="NS",1E99,IFERROR(--TEXTBEFORE(standards,"-"),--standards))),AND(E$2<>"RPD", min_std<>1E99, ISNUMBER(F6),F6>(10*min_std)))
+=LET(standards,$D7:$J7,min_std,MIN(IF(standards="NS",1E99,IFERROR(--TEXTBEFORE(standards,"-"),--standards))),AND(K$2<>"RPD", min_std<>1E99, ISNUMBER(K7),K7>(10*min_std)))
 ```
 - Highlights values that exceed 10X the standard and will require comparison to upper cap concentrations listed in P11
-- $D6: start of standards
-- $D6: end of standards
-- F6: start of data 
-- E2: RPD's row of current col (checks if is RPD col)
+- $D7: start of standards  
+- $J7: end of standards   
+- K7: start of data   
+- K2: RPD's row of current col (checks if is RPD col)    
+- "NS": value representing no standard 
 
 #### RPD DQO Limits
 | Medium | Parameter Category | Lab Duplicate DQO | Field Duplicate DQO |
